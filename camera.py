@@ -56,7 +56,7 @@ class Camera:
 
     def camera_update_axii(self):
         # rotate = rotate_y(self.angleYaw) @ rotate_x(self.anglePitch)
-        rotate = rotate_x(self.anglePitch) @ rotate_y(self.angleYaw)  # this concatenation gives right visual
+        rotate = rotate_x(self.anglePitch) @ rotate_y(self.angleYaw)
         self.axiiIdentity()
         self.forward = self.forward @ rotate
         self.right = self.right @ rotate

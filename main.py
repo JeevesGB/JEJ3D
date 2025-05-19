@@ -4,6 +4,8 @@ from projection import *
 import pygame as pg
 import os
 import math
+import sys
+
 
 
 class SoftwareRender:
@@ -13,15 +15,35 @@ class SoftwareRender:
         self.H_WIDTH, self.H_HEIGHT = self.WIDTH // 2, self.HEIGHT // 2
         self.FPS = 60
         self.screen = pg.display.set_mode(self.RES)
-        self.clock = pg.time.Clock()  # ← Fixed this line
+        self.clock = pg.time.Clock()
         self.font = pg.font.SysFont('Arial', 20)
         self.model_list_width = 300
         self.model_list_rect = pg.Rect(0, 0, self.model_list_width, self.HEIGHT)
-        self.resources_path = 'resources'
+
+        # 🧠 Corrected location and structure
+        self.resources_path = self.get_base_path('resources')
+        if not os.path.exists(self.resources_path):
+            os.makedirs(self.resources_path)
+            print("Created 'resources/' folder. Please place your .obj model files there.")
+
         self.model_files = [f for f in os.listdir(self.resources_path) if f.endswith('.obj')]
+        if not self.model_files:
+            print("No .obj files found in 'resources/'. Exiting.")
+            sys.exit()
+
         self.selected_index = 0
         self.object = None
         self.create_objects()
+
+    def get_base_path(self, *paths):
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(base_path, *paths)
+
+
+
 
     def create_objects(self):
         self.camera = Camera(self, [-5, 6, -55])
@@ -92,5 +114,12 @@ class SoftwareRender:
 
 
 if __name__ == '__main__':
-    app = SoftwareRender()
-    app.run()
+    try:
+        app = SoftwareRender()
+        app.run()
+    except Exception as e:
+        import traceback
+        with open("crash_log.txt", "w") as f:
+            f.write("The application has crashed:\n")
+            traceback.print_exc(file=f)
+        print("An error occurred. See crash_log.txt for details.")
