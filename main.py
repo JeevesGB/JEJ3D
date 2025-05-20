@@ -1,3 +1,8 @@
+import matrix_functions
+import camera
+import matrix_functions
+import projection
+import object_3d
 from object_3d import *
 from camera import *
 from projection import *
