@@ -19,8 +19,6 @@ class SoftwareRender:
         self.font = pg.font.SysFont('Arial', 20)
         self.model_list_width = 300
         self.model_list_rect = pg.Rect(0, 0, self.model_list_width, self.HEIGHT)
-
-        # 🧠 Corrected location and structure
         self.resources_path = self.get_base_path('resources')
         if not os.path.exists(self.resources_path):
             os.makedirs(self.resources_path)
@@ -41,9 +39,6 @@ class SoftwareRender:
         else:
             base_path = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(base_path, *paths)
-
-
-
 
     def create_objects(self):
         self.camera = Camera(self, [-5, 6, -55])
