@@ -1,6 +1,5 @@
 import matrix_functions
 import camera
-import matrix_functions
 import projection
 import object_3d
 from object_3d import *
@@ -10,15 +9,15 @@ import pygame as pg
 import os
 import math
 import sys
-
-
+import numpy as np
 
 class SoftwareRender:
     def __init__(self):
         pg.init()
+
         self.RES = self.WIDTH, self.HEIGHT = 1600, 900
         self.H_WIDTH, self.H_HEIGHT = self.WIDTH // 2, self.HEIGHT // 2
-        self.FPS = 60
+        self.FPS = 200
         self.screen = pg.display.set_mode(self.RES)
         self.clock = pg.time.Clock()
         self.font = pg.font.SysFont('Arial', 20)
@@ -29,9 +28,10 @@ class SoftwareRender:
             os.makedirs(self.resources_path)
             print("Created 'resources/' folder. Please place your .obj model files there.")
 
-        self.model_files = [f for f in os.listdir(self.resources_path) if f.endswith('.obj')]
+        SUPPORTED_EXTS = ('.obj',)
+        self.model_files = [f for f in os.listdir(self.resources_path) if f.lower().endswith(SUPPORTED_EXTS)]
         if not self.model_files:
-            print("No .obj files found in 'resources/'. Exiting.")
+            print("No .obj model files found in 'resources/'. Exiting.")
             sys.exit()
 
         self.selected_index = 0
@@ -45,28 +45,36 @@ class SoftwareRender:
             base_path = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(base_path, *paths)
 
+    def load_model_file(self, filepath):
+        ext = os.path.splitext(filepath)[1].lower()
+        if ext == '.obj':
+            vertex, faces = [], []
+            with open(filepath) as f:
+                for line in f:
+                    if line.startswith('v '):
+                        vertex.append([float(i) for i in line.split()[1:]] + [1])
+                    elif line.startswith('f'):
+                        faces_ = line.split()[1:]
+                        faces.append([int(face_.split('/')[0]) - 1 for face_ in faces_])
+            if not vertex or not faces:
+                raise RuntimeError("No valid vertices or faces found in .obj file")
+            return vertex, faces
+        else:
+            raise ValueError(f"Unsupported file format: {ext}. Only .obj files are supported.")
+
     def create_objects(self):
         self.camera = Camera(self, [-5, 6, -55])
         self.projection = Projection(self)
         self.load_model(self.model_files[self.selected_index])
 
     def load_model(self, filename):
-        self.object = self.get_object_from_file(os.path.join(self.resources_path, filename))
+        full_path = os.path.join(self.resources_path, filename)
+        vertex, faces = self.load_model_file(full_path)
+        self.object = Object3D(self, vertex, faces)
         self.object.rotate_y(-math.pi / 4)
         self.current_model_name = filename
-        self.vertex_count = len(self.object.vertices)
-        self.face_count = len(self.object.faces)
-
-    def get_object_from_file(self, filepath):
-        vertex, faces = [], []
-        with open(filepath) as f:
-            for line in f:
-                if line.startswith('v '):
-                    vertex.append([float(i) for i in line.split()[1:]] + [1])
-                elif line.startswith('f'):
-                    faces_ = line.split()[1:]
-                    faces.append([int(face_.split('/')[0]) - 1 for face_ in faces_])
-        return Object3D(self, vertex, faces)
+        self.vertex_count = len(vertex)
+        self.face_count = len(faces)
 
     def draw_sidebar(self):
         pg.draw.rect(self.screen, pg.Color('gray25'), self.model_list_rect)
@@ -101,17 +109,14 @@ class SoftwareRender:
         while True:
             self.draw()
             self.camera.control()
-
             for event in pg.event.get():
                 if event.type == pg.QUIT:
-                    exit()
+                    sys.exit()
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     self.handle_mouse_click(event.pos)
-
-            pg.display.set_caption(f'{self.current_model_name} | FPS: {self.clock.get_fps():.2f}')
+            pg.display.set_caption(f"JEJ3D | FPS: {self.clock.get_fps():.2f}")
             pg.display.flip()
             self.clock.tick(self.FPS)
-
 
 if __name__ == '__main__':
     try:
